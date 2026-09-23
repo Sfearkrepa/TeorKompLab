@@ -214,49 +214,49 @@
             // постановкаЗадачиToolStripMenuItem
             // 
             постановкаЗадачиToolStripMenuItem.Name = "постановкаЗадачиToolStripMenuItem";
-            постановкаЗадачиToolStripMenuItem.Size = new Size(222, 22);
+            постановкаЗадачиToolStripMenuItem.Size = new Size(231, 22);
             постановкаЗадачиToolStripMenuItem.Text = "Постановка задачи";
             постановкаЗадачиToolStripMenuItem.Click += постановкаЗадачиToolStripMenuItem_Click;
             // 
             // грамматикаToolStripMenuItem
             // 
             грамматикаToolStripMenuItem.Name = "грамматикаToolStripMenuItem";
-            грамматикаToolStripMenuItem.Size = new Size(222, 22);
+            грамматикаToolStripMenuItem.Size = new Size(231, 22);
             грамматикаToolStripMenuItem.Text = "Грамматика";
             грамматикаToolStripMenuItem.Click += грамматикаToolStripMenuItem_Click;
             // 
             // классификацияГраматикиToolStripMenuItem
             // 
             классификацияГраматикиToolStripMenuItem.Name = "классификацияГраматикиToolStripMenuItem";
-            классификацияГраматикиToolStripMenuItem.Size = new Size(222, 22);
+            классификацияГраматикиToolStripMenuItem.Size = new Size(231, 22);
             классификацияГраматикиToolStripMenuItem.Text = "Классификация грамматики";
             классификацияГраматикиToolStripMenuItem.Click += классификацияГраматикиToolStripMenuItem_Click;
             // 
             // методАнализаToolStripMenuItem
             // 
             методАнализаToolStripMenuItem.Name = "методАнализаToolStripMenuItem";
-            методАнализаToolStripMenuItem.Size = new Size(222, 22);
+            методАнализаToolStripMenuItem.Size = new Size(231, 22);
             методАнализаToolStripMenuItem.Text = "Метод анализа";
             методАнализаToolStripMenuItem.Click += методАнализаToolStripMenuItem_Click;
             // 
             // тестовыйПримерToolStripMenuItem
             // 
             тестовыйПримерToolStripMenuItem.Name = "тестовыйПримерToolStripMenuItem";
-            тестовыйПримерToolStripMenuItem.Size = new Size(222, 22);
+            тестовыйПримерToolStripMenuItem.Size = new Size(231, 22);
             тестовыйПримерToolStripMenuItem.Text = "Тестовый пример";
             тестовыйПримерToolStripMenuItem.Click += тестовыйПримерToolStripMenuItem_Click;
             // 
             // списокЛитературыToolStripMenuItem
             // 
             списокЛитературыToolStripMenuItem.Name = "списокЛитературыToolStripMenuItem";
-            списокЛитературыToolStripMenuItem.Size = new Size(222, 22);
+            списокЛитературыToolStripMenuItem.Size = new Size(231, 22);
             списокЛитературыToolStripMenuItem.Text = "Список литературы";
             списокЛитературыToolStripMenuItem.Click += списокЛитературыToolStripMenuItem_Click;
             // 
             // исходныйКодПрограммыToolStripMenuItem
             // 
             исходныйКодПрограммыToolStripMenuItem.Name = "исходныйКодПрограммыToolStripMenuItem";
-            исходныйКодПрограммыToolStripMenuItem.Size = new Size(222, 22);
+            исходныйКодПрограммыToolStripMenuItem.Size = new Size(231, 22);
             исходныйКодПрограммыToolStripMenuItem.Text = "Исходный код программы";
             исходныйКодПрограммыToolStripMenuItem.Click += исходныйКодПрограммыToolStripMenuItem_Click;
             // 
@@ -487,10 +487,10 @@
             // richTextBox1
             // 
             richTextBox1.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
-            richTextBox1.Location = new Point(38, 62);
+            richTextBox1.Location = new Point(49, 62);
             richTextBox1.Margin = new Padding(3, 2, 3, 2);
             richTextBox1.Name = "richTextBox1";
-            richTextBox1.Size = new Size(675, 179);
+            richTextBox1.Size = new Size(664, 179);
             richTextBox1.TabIndex = 3;
             richTextBox1.Text = "";
             // 
@@ -499,7 +499,7 @@
             richTextBox2.Location = new Point(15, 62);
             richTextBox2.Margin = new Padding(3, 2, 3, 2);
             richTextBox2.Name = "richTextBox2";
-            richTextBox2.Size = new Size(25, 179);
+            richTextBox2.Size = new Size(28, 179);
             richTextBox2.TabIndex = 4;
             richTextBox2.Text = "";
             // 

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 using System.Windows.Forms;
@@ -11,6 +12,8 @@ namespace TeorKomp_Lab1
         private bool isModified = false;
         private float currentFontSize = 10.0f;
         private bool isRussian = true;
+        private readonly LexicalAnalyzer _lexer = new LexicalAnalyzer();
+        private readonly List<LexError> _currentErrors = new List<LexError>();
 
         public Form1()
         {
@@ -19,6 +22,12 @@ namespace TeorKomp_Lab1
             richTextBox1.TextChanged += RichTextBox1_TextChanged;
             richTextBox1.VScroll += RichTextBox1_VScroll;
             richTextBox1.FontChanged += RichTextBox1_FontChanged;
+
+            dataGridView1.CellDoubleClick += DataGridView1_CellDoubleClick;
+            dataGridView1.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
+            dataGridView1.MultiSelect = false;
+            dataGridView1.ReadOnly = true;
+            dataGridView1.AllowUserToAddRows = false;
 
             SetupHotkeys();
             SetupFontSizeComboBox();
@@ -154,16 +163,16 @@ namespace TeorKomp_Lab1
 
             if (russian)
             {
-                if (dataGridView1.Columns["Код"] != null) dataGridView1.Columns["Код"].HeaderText = "Код";
+                if (dataGridView1.Columns["Код"] != null) dataGridView1.Columns["Код"].HeaderText = "Лексема";
                 if (dataGridView1.Columns["Тип"] != null) dataGridView1.Columns["Тип"].HeaderText = "Тип";
-                if (dataGridView1.Columns["Лексема"] != null) dataGridView1.Columns["Лексема"].HeaderText = "Лексема";
+                if (dataGridView1.Columns["Лексема"] != null) dataGridView1.Columns["Лексема"].HeaderText = "Строка";
                 if (dataGridView1.Columns["Позиция"] != null) dataGridView1.Columns["Позиция"].HeaderText = "Позиция";
             }
             else
             {
-                if (dataGridView1.Columns["Код"] != null) dataGridView1.Columns["Код"].HeaderText = "Code";
+                if (dataGridView1.Columns["Код"] != null) dataGridView1.Columns["Код"].HeaderText = "Lexeme";
                 if (dataGridView1.Columns["Тип"] != null) dataGridView1.Columns["Тип"].HeaderText = "Type";
-                if (dataGridView1.Columns["Лексема"] != null) dataGridView1.Columns["Лексема"].HeaderText = "Lexeme";
+                if (dataGridView1.Columns["Лексема"] != null) dataGridView1.Columns["Лексема"].HeaderText = "Line";
                 if (dataGridView1.Columns["Позиция"] != null) dataGridView1.Columns["Позиция"].HeaderText = "Position";
             }
         }
@@ -209,7 +218,7 @@ namespace TeorKomp_Lab1
                     string filePath = files[0];
                     string ext = Path.GetExtension(filePath).ToLower();
 
-                    if (ext == ".txt" || ext == ".cs" || ext == ".cpp" || ext == ".h" || ext == ".json" || ext == "")
+                    if (ext == ".txt" || ext == ".cs" || ext == ".cpp" || ext == ".h" || ext == ".json" || ext == "" || ext == ".zig")
                         OpenDroppedFile(filePath);
                     else
                         MessageBox.Show(isRussian ? "Поддерживаются текстовые файлы" : "Only text files are supported",
@@ -365,6 +374,8 @@ namespace TeorKomp_Lab1
         {
             if (isModified && !PromptSaveChanges()) return;
             richTextBox1.Clear();
+            dataGridView1.Rows.Clear();
+            _currentErrors.Clear();
             currentFilePath = string.Empty;
             isModified = false;
             UpdateFormTitle();
@@ -377,8 +388,8 @@ namespace TeorKomp_Lab1
             using (OpenFileDialog ofd = new OpenFileDialog())
             {
                 ofd.Filter = isRussian
-                    ? "Текстовые файлы (*.txt)|*.txt|Все файлы (*.*)|*.*"
-                    : "Text files (*.txt)|*.txt|All files (*.*)|*.*";
+                    ? "Текстовые файлы (*.txt)|*.txt|Файлы Zig (*.zig)|*.zig|Все файлы (*.*)|*.*"
+                    : "Text files (*.txt)|*.txt|Zig files (*.zig)|*.zig|All files (*.*)|*.*";
 
                 if (ofd.ShowDialog() == DialogResult.OK)
                 {
@@ -424,8 +435,8 @@ namespace TeorKomp_Lab1
             using (SaveFileDialog sfd = new SaveFileDialog())
             {
                 sfd.Filter = isRussian
-                    ? "Текстовые файлы (*.txt)|*.txt|Все файлы (*.*)|*.*"
-                    : "Text files (*.txt)|*.txt|All files (*.*)|*.*";
+                    ? "Текстовые файлы (*.txt)|*.txt|Файлы Zig (*.zig)|*.zig|Все файлы (*.*)|*.*"
+                    : "Text files (*.txt)|*.txt|Zig files (*.zig)|*.zig|All files (*.*)|*.*";
 
                 sfd.FileName = string.IsNullOrEmpty(currentFilePath)
                     ? (isRussian ? "Новый документ.txt" : "New document.txt")
@@ -463,11 +474,96 @@ namespace TeorKomp_Lab1
 
         private void пускToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            MessageBox.Show(
-                isRussian ? "Запуск анализа...\n(Функционал будет добавлен позже)"
-                          : "Starting analysis...\n(Will be implemented later)",
-                isRussian ? "Пуск" : "Run",
-                MessageBoxButtons.OK, MessageBoxIcon.Information);
+            RunLexicalAnalysis();
+        }
+
+        private void RunLexicalAnalysis()
+        {
+            dataGridView1.Rows.Clear();
+            _currentErrors.Clear();
+
+            string source = richTextBox1.Text;
+            if (string.IsNullOrWhiteSpace(source))
+            {
+                MessageBox.Show(
+                    isRussian ? "Текст программы пуст." : "Source text is empty.",
+                    isRussian ? "Пуск" : "Run",
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            LexResult result = _lexer.Analyze(source);
+
+            foreach (var token in result.Tokens)
+            {
+                string typeName = isRussian
+                    ? LexicalAnalyzer.TypeToRussian(token.Type)
+                    : LexicalAnalyzer.TypeToEnglish(token.Type);
+
+                int rowIndex = dataGridView1.Rows.Add(
+                    token.Value,
+                    typeName,
+                    token.Line,
+                    token.Column);
+
+                if (token.Type == TokenType.Unknown)
+                {
+                    var row = dataGridView1.Rows[rowIndex];
+                    row.DefaultCellStyle.BackColor = Color.MistyRose;
+                    row.DefaultCellStyle.ForeColor = Color.DarkRed;
+                    row.Tag = token.Index;
+                }
+            }
+
+            foreach (var error in result.Errors)
+            {
+                int rowIndex = dataGridView1.Rows.Add(
+                    error.Message,
+                    isRussian ? "ошибка" : "error",
+                    error.Line,
+                    error.Column);
+
+                var row = dataGridView1.Rows[rowIndex];
+                row.DefaultCellStyle.BackColor = Color.LightCoral;
+                row.DefaultCellStyle.ForeColor = Color.White;
+                row.Tag = error.Index;
+
+                _currentErrors.Add(error);
+            }
+
+            if (result.Errors.Count > 0)
+            {
+                MessageBox.Show(
+                    isRussian
+                        ? $"Анализ завершён. Найдено ошибок: {result.Errors.Count}.\nДвойной щелчок по строке ошибки переместит курсор в редактор."
+                        : $"Analysis complete. Errors found: {result.Errors.Count}.\nDouble-click an error row to jump to the editor.",
+                    isRussian ? "Пуск" : "Run",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
+            else
+            {
+                MessageBox.Show(
+                    isRussian ? $"Анализ завершён. Найдено лексем: {result.Tokens.Count}"
+                              : $"Analysis complete. Tokens found: {result.Tokens.Count}",
+                    isRussian ? "Пуск" : "Run",
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+        }
+
+        private void DataGridView1_CellDoubleClick(object sender, DataGridViewCellEventArgs e)
+        {
+            if (e.RowIndex < 0) return;
+
+            var row = dataGridView1.Rows[e.RowIndex];
+            if (row.Tag == null) return;
+
+            if (!int.TryParse(row.Tag.ToString(), out int index)) return;
+            if (index < 0 || index >= richTextBox1.TextLength) return;
+
+            richTextBox1.Focus();
+            richTextBox1.SelectionStart = index;
+            richTextBox1.SelectionLength = 1;
+            richTextBox1.ScrollToCaret();
         }
 
         private void ПускtoolStripButton9_Click(object sender, EventArgs e) => пускToolStripMenuItem_Click(sender, e);
