@@ -13,7 +13,9 @@ namespace TeorKomp_Lab1
         private float currentFontSize = 10.0f;
         private bool isRussian = true;
         private readonly LexicalAnalyzer _lexer = new LexicalAnalyzer();
+        private readonly SyntaxAnalyzer _parser = new SyntaxAnalyzer();
         private readonly List<LexError> _currentErrors = new List<LexError>();
+        private readonly List<SyntaxError> _currentSyntaxErrors = new List<SyntaxError>();
 
         public Form1()
         {
@@ -187,6 +189,15 @@ namespace TeorKomp_Lab1
             if (isModified) title += " *";
 
             this.Text = title;
+        }
+
+        private void UpdateStatus(string text)
+        {
+            if (statusStrip1.Items.Count == 0)
+            {
+                statusStrip1.Items.Add(new ToolStripStatusLabel());
+            }
+            ((ToolStripStatusLabel)statusStrip1.Items[0]).Text = text;
         }
 
         private void SetupDragAndDrop()
@@ -376,10 +387,12 @@ namespace TeorKomp_Lab1
             richTextBox1.Clear();
             dataGridView1.Rows.Clear();
             _currentErrors.Clear();
+            _currentSyntaxErrors.Clear();
             currentFilePath = string.Empty;
             isModified = false;
             UpdateFormTitle();
             UpdateLineNumbers();
+            UpdateStatus(string.Empty);
         }
 
         private void OpenFile()
@@ -481,6 +494,7 @@ namespace TeorKomp_Lab1
         {
             dataGridView1.Rows.Clear();
             _currentErrors.Clear();
+            _currentSyntaxErrors.Clear();
 
             string source = richTextBox1.Text;
             if (string.IsNullOrWhiteSpace(source))
@@ -492,9 +506,9 @@ namespace TeorKomp_Lab1
                 return;
             }
 
-            LexResult result = _lexer.Analyze(source);
+            LexResult lexResult = _lexer.Analyze(source);
 
-            foreach (var token in result.Tokens)
+            foreach (var token in lexResult.Tokens)
             {
                 string typeName = isRussian
                     ? LexicalAnalyzer.TypeToRussian(token.Type)
@@ -515,11 +529,11 @@ namespace TeorKomp_Lab1
                 }
             }
 
-            foreach (var error in result.Errors)
+            foreach (var error in lexResult.Errors)
             {
                 int rowIndex = dataGridView1.Rows.Add(
                     error.Message,
-                    isRussian ? "ошибка" : "error",
+                    isRussian ? "лексическая ошибка" : "lexical error",
                     error.Line,
                     error.Column);
 
@@ -531,22 +545,64 @@ namespace TeorKomp_Lab1
                 _currentErrors.Add(error);
             }
 
-            if (result.Errors.Count > 0)
+            if (lexResult.Errors.Count > 0)
             {
+                UpdateStatus(isRussian
+                    ? $"Лексический анализ: найдено ошибок {lexResult.Errors.Count}. Синтаксический анализ не выполняется."
+                    : $"Lexical analysis: {lexResult.Errors.Count} errors. Syntax analysis skipped.");
+
                 MessageBox.Show(
                     isRussian
-                        ? $"Анализ завершён. Найдено ошибок: {result.Errors.Count}.\nДвойной щелчок по строке ошибки переместит курсор в редактор."
-                        : $"Analysis complete. Errors found: {result.Errors.Count}.\nDouble-click an error row to jump to the editor.",
+                        ? $"Лексический анализ завершён. Найдено ошибок: {lexResult.Errors.Count}.\nСинтаксический анализ не выполняется, пока есть лексические ошибки."
+                        : $"Lexical analysis complete. Errors found: {lexResult.Errors.Count}.\nSyntax analysis is skipped while lexical errors exist.",
                     isRussian ? "Пуск" : "Run",
                     MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            SyntaxResult synResult = _parser.Analyze(lexResult.Tokens);
+
+            foreach (var error in synResult.Errors)
+            {
+                int rowIndex = dataGridView1.Rows.Add(
+                    error.Fragment,
+                    isRussian ? "синтаксическая ошибка" : "syntax error",
+                    error.Line,
+                    error.Column);
+
+                var row = dataGridView1.Rows[rowIndex];
+                row.DefaultCellStyle.BackColor = Color.Orange;
+                row.DefaultCellStyle.ForeColor = Color.Black;
+                row.Tag = error.Index;
+
+                _currentSyntaxErrors.Add(error);
+            }
+
+            if (synResult.Success)
+            {
+                UpdateStatus(isRussian
+                    ? $"Анализ завершён успешно. Лексем: {lexResult.Tokens.Count}, ошибок нет."
+                    : $"Analysis completed successfully. Tokens: {lexResult.Tokens.Count}, no errors.");
+
+                MessageBox.Show(
+                    isRussian
+                        ? $"Анализ завершён успешно. Найдено лексем: {lexResult.Tokens.Count}. Синтаксических ошибок нет."
+                        : $"Analysis completed successfully. Tokens found: {lexResult.Tokens.Count}. No syntax errors.",
+                    isRussian ? "Пуск" : "Run",
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             else
             {
+                UpdateStatus(isRussian
+                    ? $"Анализ завершён. Лексических ошибок: {lexResult.Errors.Count}, синтаксических: {synResult.Errors.Count}."
+                    : $"Analysis completed. Lexical errors: {lexResult.Errors.Count}, syntax errors: {synResult.Errors.Count}.");
+
                 MessageBox.Show(
-                    isRussian ? $"Анализ завершён. Найдено лексем: {result.Tokens.Count}"
-                              : $"Analysis complete. Tokens found: {result.Tokens.Count}",
+                    isRussian
+                        ? $"Анализ завершён.\nСинтаксических ошибок: {synResult.Errors.Count}.\nКлик по строке ошибки переместит курсор в редактор."
+                        : $"Analysis complete.\nSyntax errors: {synResult.Errors.Count}.\nClick an error row to jump to the editor.",
                     isRussian ? "Пуск" : "Run",
-                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
         }
 
