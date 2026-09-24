@@ -61,6 +61,7 @@
             русскийToolStripMenuItem = new ToolStripMenuItem();
             английскийToolStripMenuItem = new ToolStripMenuItem();
             видToolStripMenuItem = new ToolStripMenuItem();
+            найтиToolStripMenuItem = new ToolStripMenuItem();
             toolStrip1 = new ToolStrip();
             СоздатьtoolStripButton2 = new ToolStripButton();
             ОткрытьtoolStripButton2 = new ToolStripButton();
@@ -74,6 +75,7 @@
             ВызовСправкиtoolStripButton10 = new ToolStripButton();
             ОПрограммеtoolStripButton11 = new ToolStripButton();
             toolStripComboBox1 = new ToolStripComboBox();
+            toolStripComboBoxSearch = new ToolStripComboBox();
             dataGridView1 = new DataGridView();
             Код = new DataGridViewTextBoxColumn();
             Тип = new DataGridViewTextBoxColumn();
@@ -90,7 +92,7 @@
             // menuStrip1
             // 
             menuStrip1.ImageScalingSize = new Size(20, 20);
-            menuStrip1.Items.AddRange(new ToolStripItem[] { Файл, правкаToolStripMenuItem, текстToolStripMenuItem, пускToolStripMenuItem, справкаToolStripMenuItem, локализацияToolStripMenuItem, видToolStripMenuItem });
+            menuStrip1.Items.AddRange(new ToolStripItem[] { Файл, правкаToolStripMenuItem, текстToolStripMenuItem, пускToolStripMenuItem, справкаToolStripMenuItem, локализацияToolStripMenuItem, видToolStripMenuItem, найтиToolStripMenuItem });
             menuStrip1.Location = new Point(0, 0);
             menuStrip1.Name = "menuStrip1";
             menuStrip1.Padding = new Padding(5, 2, 0, 2);
@@ -315,13 +317,20 @@
             видToolStripMenuItem.Text = "Вид";
             видToolStripMenuItem.Click += видToolStripMenuItem_Click;
             // 
+            // найтиToolStripMenuItem
+            // 
+            найтиToolStripMenuItem.Name = "найтиToolStripMenuItem";
+            найтиToolStripMenuItem.Size = new Size(53, 20);
+            найтиToolStripMenuItem.Text = "Найти";
+            найтиToolStripMenuItem.Click += найтиToolStripMenuItem_Click;
+            // 
             // toolStrip1
             // 
             toolStrip1.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             toolStrip1.AutoSize = false;
             toolStrip1.Dock = DockStyle.None;
             toolStrip1.ImageScalingSize = new Size(32, 32);
-            toolStrip1.Items.AddRange(new ToolStripItem[] { СоздатьtoolStripButton2, ОткрытьtoolStripButton2, СохранитьtoolStripButton3, ОтменитьtoolStripButton4, ПовторитьtoolStripButton5, КопироватьtoolStripButton6, ВырезатьtoolStripButton7, ВставитьtoolStripButton8, ПускtoolStripButton9, ВызовСправкиtoolStripButton10, ОПрограммеtoolStripButton11, toolStripComboBox1 });
+            toolStrip1.Items.AddRange(new ToolStripItem[] { СоздатьtoolStripButton2, ОткрытьtoolStripButton2, СохранитьtoolStripButton3, ОтменитьtoolStripButton4, ПовторитьtoolStripButton5, КопироватьtoolStripButton6, ВырезатьtoolStripButton7, ВставитьtoolStripButton8, ПускtoolStripButton9, ВызовСправкиtoolStripButton10, ОПрограммеtoolStripButton11, toolStripComboBox1, toolStripComboBoxSearch });
             toolStrip1.Location = new Point(10, 21);
             toolStrip1.Name = "toolStrip1";
             toolStrip1.Size = new Size(703, 39);
@@ -443,6 +452,11 @@
             // 
             toolStripComboBox1.Name = "toolStripComboBox1";
             toolStripComboBox1.Size = new Size(106, 39);
+            // 
+            // toolStripComboBoxSearch
+            // 
+            toolStripComboBoxSearch.Name = "toolStripComboBoxSearch";
+            toolStripComboBoxSearch.Size = new Size(170, 39);
             // 
             // dataGridView1
             // 
@@ -593,5 +607,7 @@
         private DataGridViewTextBoxColumn Позиция;
         private StatusStrip statusStrip1;
         private ToolStripComboBox toolStripComboBox1;
+        private ToolStripMenuItem найтиToolStripMenuItem;
+        private ToolStripComboBox toolStripComboBoxSearch;
     }
 }

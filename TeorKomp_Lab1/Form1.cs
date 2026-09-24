@@ -14,8 +14,11 @@ namespace TeorKomp_Lab1
         private bool isRussian = true;
         private readonly LexicalAnalyzer _lexer = new LexicalAnalyzer();
         private readonly SyntaxAnalyzer _parser = new SyntaxAnalyzer();
+        private readonly RegexSearcher _searcher = new RegexSearcher();
         private readonly List<LexError> _currentErrors = new List<LexError>();
         private readonly List<SyntaxError> _currentSyntaxErrors = new List<SyntaxError>();
+        private readonly List<RegexMatch> _currentMatches = new List<RegexMatch>();
+        private bool _searchMode = false;
 
         public Form1()
         {
@@ -25,6 +28,8 @@ namespace TeorKomp_Lab1
             richTextBox1.VScroll += RichTextBox1_VScroll;
             richTextBox1.FontChanged += RichTextBox1_FontChanged;
 
+            this.FormClosing += Form1_FormClosing;
+
             dataGridView1.CellDoubleClick += DataGridView1_CellDoubleClick;
             dataGridView1.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
             dataGridView1.MultiSelect = false;
@@ -33,6 +38,7 @@ namespace TeorKomp_Lab1
 
             SetupHotkeys();
             SetupFontSizeComboBox();
+            SetupSearchComboBox();
             SetupDragAndDrop();
             SetupLocalization();
 
@@ -66,6 +72,7 @@ namespace TeorKomp_Lab1
                 справкаToolStripMenuItem.Text = "Справка";
                 локализацияToolStripMenuItem.Text = "Локализация";
                 видToolStripMenuItem.Text = "Вид";
+                найтиToolStripMenuItem.Text = "Найти";
 
                 создатьToolStripMenuItem.Text = "Создать";
                 открытьToolStripMenuItem.Text = "Открыть";
@@ -115,6 +122,7 @@ namespace TeorKomp_Lab1
                 справкаToolStripMenuItem.Text = "Help";
                 локализацияToolStripMenuItem.Text = "Language";
                 видToolStripMenuItem.Text = "View";
+                найтиToolStripMenuItem.Text = "Find";
 
                 создатьToolStripMenuItem.Text = "New";
                 открытьToolStripMenuItem.Text = "Open";
@@ -155,7 +163,7 @@ namespace TeorKomp_Lab1
             }
 
             TranslateDataGridViewHeaders(russian);
-
+            UpdateSearchComboBoxLanguage();
             UpdateFormTitle();
         }
 
@@ -163,19 +171,39 @@ namespace TeorKomp_Lab1
         {
             if (dataGridView1.Columns.Count == 0) return;
 
-            if (russian)
+            if (_searchMode)
             {
-                if (dataGridView1.Columns["Код"] != null) dataGridView1.Columns["Код"].HeaderText = "Лексема";
-                if (dataGridView1.Columns["Тип"] != null) dataGridView1.Columns["Тип"].HeaderText = "Тип";
-                if (dataGridView1.Columns["Лексема"] != null) dataGridView1.Columns["Лексема"].HeaderText = "Строка";
-                if (dataGridView1.Columns["Позиция"] != null) dataGridView1.Columns["Позиция"].HeaderText = "Позиция";
+                if (russian)
+                {
+                    if (dataGridView1.Columns["Код"] != null) dataGridView1.Columns["Код"].HeaderText = "Найденная подстрока";
+                    if (dataGridView1.Columns["Тип"] != null) dataGridView1.Columns["Тип"].HeaderText = "Длина";
+                    if (dataGridView1.Columns["Лексема"] != null) dataGridView1.Columns["Лексема"].HeaderText = "Строка";
+                    if (dataGridView1.Columns["Позиция"] != null) dataGridView1.Columns["Позиция"].HeaderText = "Позиция";
+                }
+                else
+                {
+                    if (dataGridView1.Columns["Код"] != null) dataGridView1.Columns["Код"].HeaderText = "Match";
+                    if (dataGridView1.Columns["Тип"] != null) dataGridView1.Columns["Тип"].HeaderText = "Length";
+                    if (dataGridView1.Columns["Лексема"] != null) dataGridView1.Columns["Лексема"].HeaderText = "Line";
+                    if (dataGridView1.Columns["Позиция"] != null) dataGridView1.Columns["Позиция"].HeaderText = "Position";
+                }
             }
             else
             {
-                if (dataGridView1.Columns["Код"] != null) dataGridView1.Columns["Код"].HeaderText = "Lexeme";
-                if (dataGridView1.Columns["Тип"] != null) dataGridView1.Columns["Тип"].HeaderText = "Type";
-                if (dataGridView1.Columns["Лексема"] != null) dataGridView1.Columns["Лексема"].HeaderText = "Line";
-                if (dataGridView1.Columns["Позиция"] != null) dataGridView1.Columns["Позиция"].HeaderText = "Position";
+                if (russian)
+                {
+                    if (dataGridView1.Columns["Код"] != null) dataGridView1.Columns["Код"].HeaderText = "Лексема";
+                    if (dataGridView1.Columns["Тип"] != null) dataGridView1.Columns["Тип"].HeaderText = "Тип";
+                    if (dataGridView1.Columns["Лексема"] != null) dataGridView1.Columns["Лексема"].HeaderText = "Строка";
+                    if (dataGridView1.Columns["Позиция"] != null) dataGridView1.Columns["Позиция"].HeaderText = "Позиция";
+                }
+                else
+                {
+                    if (dataGridView1.Columns["Код"] != null) dataGridView1.Columns["Код"].HeaderText = "Lexeme";
+                    if (dataGridView1.Columns["Тип"] != null) dataGridView1.Columns["Тип"].HeaderText = "Type";
+                    if (dataGridView1.Columns["Лексема"] != null) dataGridView1.Columns["Лексема"].HeaderText = "Line";
+                    if (dataGridView1.Columns["Позиция"] != null) dataGridView1.Columns["Позиция"].HeaderText = "Position";
+                }
             }
         }
 
@@ -271,6 +299,29 @@ namespace TeorKomp_Lab1
             toolStripComboBox1.SelectedIndexChanged += ToolStripComboBox1_SelectedIndexChanged;
         }
 
+        private void SetupSearchComboBox()
+        {
+            toolStripComboBoxSearch.Items.Clear();
+            toolStripComboBoxSearch.Items.Add(_searcher.GetTaskName(0, isRussian));
+            toolStripComboBoxSearch.Items.Add(_searcher.GetTaskName(1, isRussian));
+            toolStripComboBoxSearch.Items.Add(_searcher.GetTaskName(2, isRussian));
+
+            toolStripComboBoxSearch.SelectedIndex = 0;
+            toolStripComboBoxSearch.DropDownStyle = ComboBoxStyle.DropDownList;
+        }
+
+        private void UpdateSearchComboBoxLanguage()
+        {
+            int idx = toolStripComboBoxSearch.SelectedIndex;
+
+            toolStripComboBoxSearch.Items.Clear();
+            toolStripComboBoxSearch.Items.Add(_searcher.GetTaskName(0, isRussian));
+            toolStripComboBoxSearch.Items.Add(_searcher.GetTaskName(1, isRussian));
+            toolStripComboBoxSearch.Items.Add(_searcher.GetTaskName(2, isRussian));
+
+            toolStripComboBoxSearch.SelectedIndex = idx >= 0 ? idx : 0;
+        }
+
         private void ToolStripComboBox1_SelectedIndexChanged(object sender, EventArgs e)
         {
             if (toolStripComboBox1.SelectedItem is int newSize)
@@ -345,6 +396,7 @@ namespace TeorKomp_Lab1
 
             пускToolStripMenuItem.ShortcutKeys = Keys.F5;
             вызовСправкиToolStripMenuItem.ShortcutKeys = Keys.F1;
+            найтиToolStripMenuItem.ShortcutKeys = Keys.Control | Keys.F;
         }
 
         private void отменитьToolStripMenuItem_Click_1(object sender, EventArgs e) => richTextBox1.Undo();
@@ -377,8 +429,37 @@ namespace TeorKomp_Lab1
 
         private void выходToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            if (isModified && !PromptSaveChanges()) return;
             Application.Exit();
+        }
+
+        private void Form1_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            if (!isModified) return;
+
+            string msg = isRussian
+                ? "В документе есть несохранённые изменения.\nСохранить перед выходом?"
+                : "The document has unsaved changes.\nSave before exiting?";
+
+            string title = isRussian ? "Несохранённые изменения" : "Unsaved Changes";
+
+            var result = MessageBox.Show(
+                msg, title,
+                MessageBoxButtons.YesNoCancel,
+                MessageBoxIcon.Question);
+
+            if (result == DialogResult.Yes)
+            {
+                SaveFile();
+
+                if (isModified)
+                {
+                    e.Cancel = true;
+                }
+            }
+            else if (result == DialogResult.Cancel)
+            {
+                e.Cancel = true;
+            }
         }
 
         private void NewFile()
@@ -388,8 +469,12 @@ namespace TeorKomp_Lab1
             dataGridView1.Rows.Clear();
             _currentErrors.Clear();
             _currentSyntaxErrors.Clear();
+            _currentMatches.Clear();
             currentFilePath = string.Empty;
             isModified = false;
+            _searchMode = false;
+            TranslateDataGridViewHeaders(isRussian);
+            ResetHighlight();
             UpdateFormTitle();
             UpdateLineNumbers();
             UpdateStatus(string.Empty);
@@ -492,9 +577,14 @@ namespace TeorKomp_Lab1
 
         private void RunLexicalAnalysis()
         {
+            _searchMode = false;
+            TranslateDataGridViewHeaders(isRussian);
+            ResetHighlight();
+
             dataGridView1.Rows.Clear();
             _currentErrors.Clear();
             _currentSyntaxErrors.Clear();
+            _currentMatches.Clear();
 
             string source = richTextBox1.Text;
             if (string.IsNullOrWhiteSpace(source))
@@ -606,6 +696,101 @@ namespace TeorKomp_Lab1
             }
         }
 
+        private void найтиToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            RunRegexSearch();
+        }
+
+        private void RunRegexSearch()
+        {
+            _searchMode = true;
+            TranslateDataGridViewHeaders(isRussian);
+
+            dataGridView1.Rows.Clear();
+            _currentMatches.Clear();
+            _currentErrors.Clear();
+            _currentSyntaxErrors.Clear();
+
+            ResetHighlight();
+
+            string source = richTextBox1.Text;
+            if (string.IsNullOrEmpty(source))
+            {
+                MessageBox.Show(
+                    isRussian ? "Текст пуст." : "Text is empty.",
+                    isRussian ? "Поиск" : "Search",
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            int taskIndex = toolStripComboBoxSearch.SelectedIndex;
+            if (taskIndex < 0) taskIndex = 0;
+
+            var matches = _searcher.FindAll(source, taskIndex);
+            _currentMatches.AddRange(matches);
+
+            foreach (var m in matches)
+            {
+                int rowIndex = dataGridView1.Rows.Add(
+                    m.Value,
+                    m.Length,
+                    m.Line,
+                    m.Column);
+
+                dataGridView1.Rows[rowIndex].Tag = m.Index;
+            }
+
+            HighlightAllMatches(matches);
+
+            string taskName = _searcher.GetTaskName(taskIndex, isRussian);
+
+            UpdateStatus(isRussian
+                ? $"Поиск «{taskName}»: найдено совпадений {matches.Count}."
+                : $"Search \"{taskName}\": {matches.Count} matches found.");
+
+            if (matches.Count == 0)
+            {
+                MessageBox.Show(
+                    isRussian ? $"По задаче «{taskName}» совпадений не найдено."
+                              : $"No matches found for \"{taskName}\".",
+                    isRussian ? "Поиск" : "Search",
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+        }
+
+        private void ResetHighlight()
+        {
+            int selStart = richTextBox1.SelectionStart;
+            int selLen = richTextBox1.SelectionLength;
+
+            richTextBox1.SelectAll();
+            richTextBox1.SelectionBackColor = richTextBox1.BackColor;
+            richTextBox1.DeselectAll();
+
+            richTextBox1.Select(selStart, selLen);
+        }
+
+        private void HighlightAllMatches(List<RegexMatch> matches)
+        {
+            foreach (var m in matches)
+            {
+                if (m.Index < 0 || m.Index + m.Length > richTextBox1.TextLength) continue;
+                richTextBox1.Select(m.Index, m.Length);
+                richTextBox1.SelectionBackColor = Color.LightYellow;
+            }
+            richTextBox1.DeselectAll();
+        }
+
+        private void HighlightSelectedMatch(int index, int length)
+        {
+            if (index < 0 || index + length > richTextBox1.TextLength) return;
+
+            richTextBox1.Focus();
+            richTextBox1.Select(index, length);
+            richTextBox1.SelectionBackColor = Color.Orange;
+            richTextBox1.ScrollToCaret();
+        }
+
         private void DataGridView1_CellDoubleClick(object sender, DataGridViewCellEventArgs e)
         {
             if (e.RowIndex < 0) return;
@@ -616,10 +801,21 @@ namespace TeorKomp_Lab1
             if (!int.TryParse(row.Tag.ToString(), out int index)) return;
             if (index < 0 || index >= richTextBox1.TextLength) return;
 
-            richTextBox1.Focus();
-            richTextBox1.SelectionStart = index;
-            richTextBox1.SelectionLength = 1;
-            richTextBox1.ScrollToCaret();
+            if (_searchMode)
+            {
+                int length = 1;
+                if (row.Cells.Count > 1 && int.TryParse(row.Cells[1].Value?.ToString(), out int len))
+                    length = len;
+
+                HighlightSelectedMatch(index, length);
+            }
+            else
+            {
+                richTextBox1.Focus();
+                richTextBox1.SelectionStart = index;
+                richTextBox1.SelectionLength = 1;
+                richTextBox1.ScrollToCaret();
+            }
         }
 
         private void ПускtoolStripButton9_Click(object sender, EventArgs e) => пускToolStripMenuItem_Click(sender, e);
