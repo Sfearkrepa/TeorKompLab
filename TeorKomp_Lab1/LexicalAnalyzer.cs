@@ -61,7 +61,7 @@ namespace TeorKomp_Lab1
         private static readonly HashSet<string> Keywords = new HashSet<string>
         {
             "const", "var", "struct", "enum", "union", "fn", "pub",
-            "return", "if", "else", "while", "for", "break", "continue"
+            "return", "if", "else", "while", "for", "break", "continue", "true", "false"
         };
 
         private static readonly HashSet<string> BuiltinTypes = new HashSet<string>

@@ -15,9 +15,12 @@ namespace TeorKomp_Lab1
         private readonly LexicalAnalyzer _lexer = new LexicalAnalyzer();
         private readonly SyntaxAnalyzer _parser = new SyntaxAnalyzer();
         private readonly RegexSearcher _searcher = new RegexSearcher();
+        private readonly SemanticAnalyzer _semanticAnalyzer = new SemanticAnalyzer();
         private readonly List<LexError> _currentErrors = new List<LexError>();
         private readonly List<SyntaxError> _currentSyntaxErrors = new List<SyntaxError>();
         private readonly List<RegexMatch> _currentMatches = new List<RegexMatch>();
+        private readonly List<SemanticError> _currentSemanticErrors = new List<SemanticError>();
+        private ProgramNode _currentAst;
         private bool _searchMode = false;
 
         public Form1()
@@ -35,6 +38,7 @@ namespace TeorKomp_Lab1
             dataGridView1.MultiSelect = false;
             dataGridView1.ReadOnly = true;
             dataGridView1.AllowUserToAddRows = false;
+            dataGridView1.EditMode = DataGridViewEditMode.EditProgrammatically;
 
             SetupHotkeys();
             SetupFontSizeComboBox();
@@ -95,6 +99,7 @@ namespace TeorKomp_Lab1
                 тестовыйПримерToolStripMenuItem.Text = "Тестовый пример";
                 списокЛитературыToolStripMenuItem.Text = "Список литературы";
                 исходныйКодПрограммыToolStripMenuItem.Text = "Исходный код программы";
+                деревоASTToolStripMenuItem.Text = "Дерево AST";
 
                 вызовСправкиToolStripMenuItem.Text = "Вызов справки";
                 оПрограммеToolStripMenuItem.Text = "О программе";
@@ -145,6 +150,7 @@ namespace TeorKomp_Lab1
                 тестовыйПримерToolStripMenuItem.Text = "Test Example";
                 списокЛитературыToolStripMenuItem.Text = "References";
                 исходныйКодПрограммыToolStripMenuItem.Text = "Source Code";
+                деревоASTToolStripMenuItem.Text = "AST Tree";
 
                 вызовСправкиToolStripMenuItem.Text = "Help Contents";
                 оПрограммеToolStripMenuItem.Text = "About";
@@ -397,6 +403,7 @@ namespace TeorKomp_Lab1
             пускToolStripMenuItem.ShortcutKeys = Keys.F5;
             вызовСправкиToolStripMenuItem.ShortcutKeys = Keys.F1;
             найтиToolStripMenuItem.ShortcutKeys = Keys.Control | Keys.F;
+            деревоASTToolStripMenuItem.ShortcutKeys = Keys.Control | Keys.T;
         }
 
         private void отменитьToolStripMenuItem_Click_1(object sender, EventArgs e) => richTextBox1.Undo();
@@ -470,6 +477,8 @@ namespace TeorKomp_Lab1
             _currentErrors.Clear();
             _currentSyntaxErrors.Clear();
             _currentMatches.Clear();
+            _currentSemanticErrors.Clear();
+            _currentAst = null;
             currentFilePath = string.Empty;
             isModified = false;
             _searchMode = false;
@@ -585,6 +594,8 @@ namespace TeorKomp_Lab1
             _currentErrors.Clear();
             _currentSyntaxErrors.Clear();
             _currentMatches.Clear();
+            _currentSemanticErrors.Clear();
+            _currentAst = null;
 
             string source = richTextBox1.Text;
             if (string.IsNullOrWhiteSpace(source))
@@ -623,7 +634,9 @@ namespace TeorKomp_Lab1
             {
                 int rowIndex = dataGridView1.Rows.Add(
                     error.Message,
-                    isRussian ? "лексическая ошибка" : "lexical error",
+                    isRussian
+                        ? $"лексическая ошибка: {error.Message}"
+                        : $"lexical error: {error.Message}",
                     error.Line,
                     error.Column);
 
@@ -656,7 +669,9 @@ namespace TeorKomp_Lab1
             {
                 int rowIndex = dataGridView1.Rows.Add(
                     error.Fragment,
-                    isRussian ? "синтаксическая ошибка" : "syntax error",
+                    isRussian
+                        ? $"синтаксическая ошибка: {error.Description}"
+                        : $"syntax error: {error.Description}",
                     error.Line,
                     error.Column);
 
@@ -668,20 +683,7 @@ namespace TeorKomp_Lab1
                 _currentSyntaxErrors.Add(error);
             }
 
-            if (synResult.Success)
-            {
-                UpdateStatus(isRussian
-                    ? $"Анализ завершён успешно. Лексем: {lexResult.Tokens.Count}, ошибок нет."
-                    : $"Analysis completed successfully. Tokens: {lexResult.Tokens.Count}, no errors.");
-
-                MessageBox.Show(
-                    isRussian
-                        ? $"Анализ завершён успешно. Найдено лексем: {lexResult.Tokens.Count}. Синтаксических ошибок нет."
-                        : $"Analysis completed successfully. Tokens found: {lexResult.Tokens.Count}. No syntax errors.",
-                    isRussian ? "Пуск" : "Run",
-                    MessageBoxButtons.OK, MessageBoxIcon.Information);
-            }
-            else
+            if (!synResult.Success)
             {
                 UpdateStatus(isRussian
                     ? $"Анализ завершён. Лексических ошибок: {lexResult.Errors.Count}, синтаксических: {synResult.Errors.Count}."
@@ -691,6 +693,55 @@ namespace TeorKomp_Lab1
                     isRussian
                         ? $"Анализ завершён.\nСинтаксических ошибок: {synResult.Errors.Count}.\nКлик по строке ошибки переместит курсор в редактор."
                         : $"Analysis complete.\nSyntax errors: {synResult.Errors.Count}.\nClick an error row to jump to the editor.",
+                    isRussian ? "Пуск" : "Run",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            SemanticResult semResult = _semanticAnalyzer.Analyze(lexResult.Tokens);
+            _currentAst = semResult.Root;
+            _currentSemanticErrors.Clear();
+            _currentSemanticErrors.AddRange(semResult.Errors);
+
+            foreach (var error in semResult.Errors)
+            {
+                int rowIndex = dataGridView1.Rows.Add(
+                    error.Fragment,
+                    isRussian
+                        ? $"семантическая ошибка: {error.Message}"
+                        : $"semantic error: {error.Message}",
+                    error.Line,
+                    error.Column);
+
+                var row = dataGridView1.Rows[rowIndex];
+                row.DefaultCellStyle.BackColor = Color.MediumPurple;
+                row.DefaultCellStyle.ForeColor = Color.White;
+                row.Tag = error.Index;
+            }
+
+            if (semResult.Success)
+            {
+                UpdateStatus(isRussian
+                    ? $"Анализ завершён успешно. Лексем: {lexResult.Tokens.Count}, семантических ошибок нет."
+                    : $"Analysis completed successfully. Tokens: {lexResult.Tokens.Count}, no semantic errors.");
+
+                MessageBox.Show(
+                    isRussian
+                        ? $"Анализ завершён успешно.\nЛексем: {lexResult.Tokens.Count}.\nСемантических ошибок нет.\nДерево AST доступно в меню «Текст → Дерево AST» (Ctrl+T)."
+                        : $"Analysis completed successfully.\nTokens: {lexResult.Tokens.Count}.\nNo semantic errors.\nAST is available in menu Text → AST Tree (Ctrl+T).",
+                    isRussian ? "Пуск" : "Run",
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            else
+            {
+                UpdateStatus(isRussian
+                    ? $"Анализ завершён. Семантических ошибок: {semResult.Errors.Count}."
+                    : $"Analysis completed. Semantic errors: {semResult.Errors.Count}.");
+
+                MessageBox.Show(
+                    isRussian
+                        ? $"Анализ завершён.\nСемантических ошибок: {semResult.Errors.Count}.\nДерево AST доступно в меню «Текст → Дерево AST» (Ctrl+T)."
+                        : $"Analysis complete.\nSemantic errors: {semResult.Errors.Count}.\nAST is available in menu Text → AST Tree (Ctrl+T).",
                     isRussian ? "Пуск" : "Run",
                     MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
@@ -710,6 +761,7 @@ namespace TeorKomp_Lab1
             _currentMatches.Clear();
             _currentErrors.Clear();
             _currentSyntaxErrors.Clear();
+            _currentSemanticErrors.Clear();
 
             ResetHighlight();
 
@@ -756,6 +808,28 @@ namespace TeorKomp_Lab1
                     isRussian ? "Поиск" : "Search",
                     MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
+        }
+
+        private void деревоASTToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            ShowAst();
+        }
+
+        private void ShowAst()
+        {
+            if (_currentAst == null)
+            {
+                MessageBox.Show(
+                    isRussian ? "Дерево AST ещё не построено. Нажмите «Пуск» для анализа."
+                              : "AST has not been built yet. Press Run to analyze.",
+                    isRussian ? "Дерево AST" : "AST Tree",
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            string text = AstPrinter.Print(_currentAst);
+            var viewer = new AstViewer(isRussian, text);
+            viewer.ShowDialog(this);
         }
 
         private void ResetHighlight()

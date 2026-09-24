@@ -53,6 +53,7 @@
             тестовыйПримерToolStripMenuItem = new ToolStripMenuItem();
             списокЛитературыToolStripMenuItem = new ToolStripMenuItem();
             исходныйКодПрограммыToolStripMenuItem = new ToolStripMenuItem();
+            деревоASTToolStripMenuItem = new ToolStripMenuItem();
             пускToolStripMenuItem = new ToolStripMenuItem();
             справкаToolStripMenuItem = new ToolStripMenuItem();
             вызовСправкиToolStripMenuItem = new ToolStripMenuItem();
@@ -208,7 +209,7 @@
             // 
             // текстToolStripMenuItem
             // 
-            текстToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { постановкаЗадачиToolStripMenuItem, грамматикаToolStripMenuItem, классификацияГраматикиToolStripMenuItem, методАнализаToolStripMenuItem, тестовыйПримерToolStripMenuItem, списокЛитературыToolStripMenuItem, исходныйКодПрограммыToolStripMenuItem });
+            текстToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { постановкаЗадачиToolStripMenuItem, грамматикаToolStripMenuItem, классификацияГраматикиToolStripMenuItem, методАнализаToolStripMenuItem, тестовыйПримерToolStripMenuItem, списокЛитературыToolStripMenuItem, исходныйКодПрограммыToolStripMenuItem, деревоASTToolStripMenuItem });
             текстToolStripMenuItem.Name = "текстToolStripMenuItem";
             текстToolStripMenuItem.Size = new Size(48, 20);
             текстToolStripMenuItem.Text = "Текст";
@@ -261,6 +262,14 @@
             исходныйКодПрограммыToolStripMenuItem.Size = new Size(231, 22);
             исходныйКодПрограммыToolStripMenuItem.Text = "Исходный код программы";
             исходныйКодПрограммыToolStripMenuItem.Click += исходныйКодПрограммыToolStripMenuItem_Click;
+            // 
+            // деревоASTToolStripMenuItem
+            // 
+            деревоASTToolStripMenuItem.Name = "деревоASTToolStripMenuItem";
+            деревоASTToolStripMenuItem.Size = new Size(231, 22);
+            деревоASTToolStripMenuItem.Text = "Дерево AST";
+            деревоASTToolStripMenuItem.ShortcutKeys = Keys.Control | Keys.T;
+            деревоASTToolStripMenuItem.Click += деревоASTToolStripMenuItem_Click;
             // 
             // пускToolStripMenuItem
             // 
@@ -609,5 +618,6 @@
         private ToolStripComboBox toolStripComboBox1;
         private ToolStripMenuItem найтиToolStripMenuItem;
         private ToolStripComboBox toolStripComboBoxSearch;
+        private ToolStripMenuItem деревоASTToolStripMenuItem;
     }
 }

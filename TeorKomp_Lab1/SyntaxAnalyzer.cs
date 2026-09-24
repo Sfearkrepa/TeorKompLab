@@ -73,12 +73,7 @@ namespace TeorKomp_Lab1
         {
             return type == TokenType.Identifier
                 || type == TokenType.Type
-                || (type == TokenType.Keyword);
-        }
-
-        private bool IsFieldSyncToken(TokenType type)
-        {
-            return type == TokenType.Punctuation && false;
+                || type == TokenType.Keyword;
         }
 
         private bool IsSyncForFields()
@@ -188,6 +183,12 @@ namespace TeorKomp_Lab1
             Expect(":", "Ожидался символ ':' после имени поля");
 
             ParseType();
+
+            if (Current.Value == "=")
+            {
+                Next();
+                ParseValue();
+            }
         }
 
         private void ParseType()
@@ -211,6 +212,45 @@ namespace TeorKomp_Lab1
             SkipToFieldsSync();
         }
 
+        private void ParseValue()
+        {
+            if (IsEOF)
+            {
+                ReportError("Ожидалось значение");
+                return;
+            }
+
+            if (Current.Type == TokenType.Number)
+            {
+                Next();
+                return;
+            }
+
+            if (Current.Type == TokenType.Keyword &&
+                (Current.Value == "true" || Current.Value == "false"))
+            {
+                Next();
+                return;
+            }
+
+            if (Current.Value == "-" || Current.Value == "+")
+            {
+                Next();
+
+                if (!IsEOF && Current.Type == TokenType.Number)
+                {
+                    Next();
+                    return;
+                }
+
+                ReportError("Ожидалось число после знака");
+                return;
+            }
+
+            ReportError("Ожидалось значение (число или логическое)");
+            SkipToFieldsSync();
+        }
+
         private void Expect(string expectedValue, string errorDescription)
         {
             if (!IsEOF && Current.Value == expectedValue)
@@ -220,11 +260,6 @@ namespace TeorKomp_Lab1
             }
 
             ReportError(errorDescription);
-
-            if (!IsEOF && Current.Value == expectedValue)
-            {
-                Next();
-            }
         }
     }
 }
