@@ -270,6 +270,7 @@ const Config = struct {
 ### Разработка грамматики
 Для описания синтаксической конструкции «объявление структуры на языке Zig» разработана следующая грамматика G[<Program>] в нотации Хомского с продукциями P:
 
+```
 1)  <Program>       → <Decl><ProgramRem>
 2)  <ProgramRem>    → <Decl><ProgramRem>
 3)  <ProgramRem>    → ε
@@ -292,6 +293,7 @@ const Config = struct {
 14) <NameRem>       → digit <NameRem>
 15) <NameRem>       → _ <NameRem>
 16) <NameRem>       → ε
+```
 
 Составляющие грамматики:
 
@@ -331,7 +333,7 @@ const Config = struct {
 
 Схема метода анализа представлена на рисунке 1.
 
-![Схема метода анализа](metod_diagram.png)
+![Схема метода анализа](diag_proc.png)
 
 Рисунок 1 — Схема метода анализа (рекурсивный спуск)
 
