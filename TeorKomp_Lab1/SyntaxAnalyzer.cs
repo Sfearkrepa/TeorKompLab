@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 
 namespace TeorKomp_Lab1
@@ -39,7 +39,7 @@ namespace TeorKomp_Lab1
             _pos = 0;
             _result = new SyntaxResult();
 
-            ParseZ();
+            ParseProgram();
 
             return _result;
         }
@@ -69,7 +69,7 @@ namespace TeorKomp_Lab1
                 fragment, t.Line, t.Column, t.Index, description));
         }
 
-        private bool IsIdentLike(TokenType type)
+        private static bool IsIdentLike(TokenType type)
         {
             return type == TokenType.Identifier
                 || type == TokenType.Type
@@ -99,7 +99,8 @@ namespace TeorKomp_Lab1
             while (!IsEOF && !IsSyncForDecl()) Next();
         }
 
-        private void ParseZ()
+        // <Program> → <Decl><ProgramRem>
+        private void ParseProgram()
         {
             if (IsEOF)
             {
@@ -108,7 +109,12 @@ namespace TeorKomp_Lab1
             }
 
             ParseDecl();
+            ParseProgramRem();
+        }
 
+        // <ProgramRem> → <Decl><ProgramRem> | ε
+        private void ParseProgramRem()
+        {
             while (!IsEOF)
             {
                 if (Current.Value == "const")
@@ -124,6 +130,7 @@ namespace TeorKomp_Lab1
             }
         }
 
+        // <Decl> → const <Name> = struct { <Fields> } ;
         private void ParseDecl()
         {
             Expect("const", "Ожидалось ключевое слово 'const'");
@@ -135,7 +142,7 @@ namespace TeorKomp_Lab1
                 if (!IsEOF && Current.Value == ";") Next();
                 return;
             }
-            Next();
+            ParseName();
 
             Expect("=", "Ожидался символ '='");
             Expect("struct", "Ожидалось ключевое слово 'struct'");
@@ -154,11 +161,17 @@ namespace TeorKomp_Lab1
             Expect(";", "Ожидался символ ';' в конце объявления");
         }
 
+        // <Fields> → <Field><FieldsRem>
         private void ParseFields()
         {
             ParseField();
+            ParseFieldsRem();
+        }
 
-            while (Current.Value == ",")
+        // <FieldsRem> → , <Field><FieldsRem> | , | ε
+        private void ParseFieldsRem()
+        {
+            while (!IsEOF && Current.Value == ",")
             {
                 Next();
 
@@ -169,6 +182,7 @@ namespace TeorKomp_Lab1
             }
         }
 
+        // <Field> → <Name> : <Type> [ = <Value> ]
         private void ParseField()
         {
             if (!IsIdentLike(Current.Type))
@@ -178,7 +192,7 @@ namespace TeorKomp_Lab1
                 if (Current.Value == ",") Next();
                 return;
             }
-            Next();
+            ParseName();
 
             Expect(":", "Ожидался символ ':' после имени поля");
 
@@ -191,6 +205,7 @@ namespace TeorKomp_Lab1
             }
         }
 
+        // <Type> → [ ] const <Type> | <Name>
         private void ParseType()
         {
             if (Current.Value == "[")
@@ -204,12 +219,33 @@ namespace TeorKomp_Lab1
 
             if (IsIdentLike(Current.Type))
             {
-                Next();
+                ParseName();
                 return;
             }
 
             ReportError("Ожидался тип поля");
             SkipToFieldsSync();
+        }
+
+        // <Name> → letter <NameRem>
+        private void ParseName()
+        {
+            if (IsEOF || !IsIdentLike(Current.Type))
+            {
+                ReportError("Ожидался идентификатор");
+                return;
+            }
+            Next();
+            ParseNameRem();
+        }
+
+        // <NameRem> → letter <NameRem> | digit <NameRem> | _ <NameRem> | ε
+        private void ParseNameRem()
+        {
+            while (!IsEOF && IsIdentLike(Current.Type))
+            {
+                Next();
+            }
         }
 
         private void ParseValue()
